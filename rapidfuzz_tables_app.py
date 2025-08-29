@@ -48,11 +48,10 @@ def fuzzy_match(queryRecord, choices, score_cutoff=0):
             'match_record_values': dict_match_records
         })
 
-    best_match = None
-    best_score = score_cutoff
+    all_matches = []
 
     for scorer in scorers:
-        result = process.extractOne(
+        results = process.extract(
             query=processed_query,
             choices=[item['query_match'] for item in choices_data],
             scorer=scorer,
@@ -60,24 +59,16 @@ def fuzzy_match(queryRecord, choices, score_cutoff=0):
             processor=processor
         )
 
-        if result:
-            match_value, score, index = result
-            if score >= best_score:
-                matched_item = choices_data[index]
-                best_match = {
-                    'match_query': queryRecord,
-                    'match_result': match_value,
-                    'score': score,
-                    'match_result_values': matched_item['match_record_values']
-                }
-        else:
-            best_match = {
+        for match_value, score, index in results:
+            matched_item = choices_data[index]
+            all_matches.append({
                 'match_query': queryRecord,
-                'match_result': None,
-                'score': 0,
-                'match_result_values': {}
-            }
-    return best_match
+                'match_result': match_value,
+                'score': score,
+                'match_result_values': matched_item['match_record_values']
+                })
+        
+    return all_matches
 
 
 
@@ -128,13 +119,19 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
             query += str(val) if val is not None else ""
             dict_query_records[src_col] = val
 
-        fm = fuzzy_match(query, dest_data, score_cutoff)
-        dict_query_records.update(fm)
-        dict_query_records.update({
-            'destTable': params_dict['destTable'],
-            'sourceTable': params_dict['sourceTable']
-        })
-        matching_records.append(dict_query_records)
+        fm_list = fuzzy_match(query, dest_data, score_cutoff)
+
+        for fm in fm_list:
+            if fm["score"] > 0:  # Solo guarda si cumple el cutoff
+                dict_query_records_copy = dict(dict_query_records)  # copia para no sobreescribir
+                dict_query_records_copy.update(fm)
+                dict_query_records_copy.update({
+                    'destTable': params_dict['destTable'],
+                    'sourceTable': params_dict['sourceTable']
+                })
+                matching_records.append(dict_query_records_copy)
+
+
 
     return matching_records
 
@@ -144,7 +141,7 @@ params_dict = {
     "host": "localhost",
     "port": 3306,
     "username": "root",
-    "password": "",
+    "password": "fer0110_*",
 
     "sourceTable": "dbo.Usuarios",
     "destTable": "crm.Clientes",
@@ -158,5 +155,5 @@ params_dict = {
 
 
 if __name__ == "__main__":
-    resultados = execute_dynamic_matching(params_dict, score_cutoff=80)
+    resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
     print(resultados)
