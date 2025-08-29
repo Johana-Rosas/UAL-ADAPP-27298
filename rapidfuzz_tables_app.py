@@ -1,9 +1,7 @@
 from rapidfuzz import process, fuzz 
 import mysql.connector
 
-# -------------------------------
-# Conexión a MySQL
-# -------------------------------
+
 def connect_to_mysql(host, username, password, port=3306, database=None):
     """
     Conecta a MySQL. El parámetro database es opcional.
@@ -18,9 +16,7 @@ def connect_to_mysql(host, username, password, port=3306, database=None):
     return connection
 
 
-# -------------------------------
-# Verificar y crear bases de datos si no existen
-# -------------------------------
+
 def ensure_databases_exist(conn, databases):
     cursor = conn.cursor()
     for db in databases:
@@ -29,9 +25,7 @@ def ensure_databases_exist(conn, databases):
     cursor.close()
 
 
-# -------------------------------
-# Fuzzy matching
-# -------------------------------
+
 def fuzzy_match(queryRecord, choices, score_cutoff=0):
     scorers = [fuzz.WRatio, fuzz.QRatio, fuzz.token_set_ratio, fuzz.ratio]
     processor = lambda x: str(x).lower()
@@ -86,11 +80,9 @@ def fuzzy_match(queryRecord, choices, score_cutoff=0):
     return best_match
 
 
-# -------------------------------
-# Ejecutar matching dinámico
-# -------------------------------
+
 def execute_dynamic_matching(params_dict, score_cutoff=0):
-    # Conectarse a MySQL sin base específica para verificar bases
+   
     conn = connect_to_mysql(
         host=params_dict.get("host", "localhost"),
         username=params_dict.get("username", "root"),
@@ -99,7 +91,7 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
         database=None
     )
 
-    # Verificar que existan las bases necesarias
+   
     ensure_databases_exist(conn, ["dbo", "crm"])
 
     cursor = conn.cursor()
@@ -147,9 +139,7 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
     return matching_records
 
 
-# -------------------------------
-# Configuración
-# -------------------------------
+
 params_dict = {
     "host": "localhost",
     "port": 3306,
@@ -166,9 +156,7 @@ params_dict = {
 }
 
 
-# -------------------------------
-# Ejecutar
-# -------------------------------
+
 if __name__ == "__main__":
     resultados = execute_dynamic_matching(params_dict, score_cutoff=80)
     print(resultados)
