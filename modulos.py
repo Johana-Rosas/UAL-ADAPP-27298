@@ -145,3 +145,17 @@ def display_results(results, as_dataframe=True):
         for item in results:
             print(item)
         return results
+
+
+
+
+
+def export_results_to_csv(results, filename="resultados.csv"):
+    
+    if not results:
+        print("No hay resultados para exportar.")
+        return
+    
+    df = pd.DataFrame(results)
+    df.to_csv(filename, index=False, encoding="utf-8")
+    print(f"✅ Resultados exportados correctamente a {filename}")
