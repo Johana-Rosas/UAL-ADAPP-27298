@@ -1,5 +1,6 @@
 from rapidfuzz import process, fuzz
 import mysql.connector
+import pandas as pd
 
 
 def connect_to_mysql(host, username, password, port=3306, database=None):
@@ -124,3 +125,23 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
                 matching_records.append(dict_query_records_copy)
 
     return matching_records
+
+
+
+
+def display_results(results, as_dataframe=True):
+    """
+    Muestra los resultados como DataFrame o como lista de diccionarios.
+    :param results: lista de diccionarios con los resultados
+    :param as_dataframe: True -> DataFrame, False -> Diccionario
+    """
+    if as_dataframe:
+        df = pd.DataFrame(results)
+        print("\n=== Resultados en DataFrame ===")
+        print(df)
+        return df
+    else:
+        print("\n=== Resultados en Diccionario ===")
+        for item in results:
+            print(item)
+        return results

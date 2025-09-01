@@ -1,6 +1,4 @@
-from modulos import execute_dynamic_matching
-import pandas as pd 
-
+from modulos import execute_dynamic_matching, display_results
 
 params_dict = {
     "host": "localhost",
@@ -19,5 +17,11 @@ params_dict = {
 
 if __name__ == "__main__":
     resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
-    df = pd.DataFrame(resultados)
-    print(df)
+
+   
+    choice = input("¿Quieres ver los resultados como DataFrame (df) o como Diccionario (dc)? ").strip().lower()
+
+    if choice == "df":
+        display_results(resultados, as_dataframe=True)
+    else:
+        display_results(resultados, as_dataframe=False)
