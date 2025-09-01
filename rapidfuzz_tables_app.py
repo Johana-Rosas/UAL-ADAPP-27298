@@ -1,4 +1,6 @@
 from modulos import execute_dynamic_matching
+import pandas as pd 
+
 
 params_dict = {
     "host": "localhost",
@@ -17,4 +19,5 @@ params_dict = {
 
 if __name__ == "__main__":
     resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
-    print(resultados)
+    df = pd.DataFrame(resultados)
+    print(df)
