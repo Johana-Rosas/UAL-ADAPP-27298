@@ -207,6 +207,8 @@ def export_results_to_excel(results, filename="resultados.xlsx"):
     print(f" Resultados exportados correctamente a {filename}")
 
 
+
+
 #entregable 9 punto 2
 
 
