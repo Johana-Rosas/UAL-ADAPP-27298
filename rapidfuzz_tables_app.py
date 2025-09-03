@@ -1,4 +1,4 @@
-from modulos import execute_dynamic_matching, display_results, export_results_to_csv
+from modulos import execute_dynamic_matching, display_results, export_results_to_excel, export_results_to_csv
 
 params_dict = {
     "host": "localhost",
@@ -18,17 +18,15 @@ params_dict = {
 if __name__ == "__main__":
     resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
 
+    # Mostrar resultados
+    display_results(resultados, as_dataframe=True)
 
-    choice = input("¿Ver resultados como DataFrame (D) o como Diccionario (C)? ").strip().lower()
-    if choice == "d":
-        display_results(resultados, as_dataframe=True)
+    # 📂 Preguntar cómo exportar
+    opcion = input("¿Deseas exportar los resultados a (1) Excel o (2) CSV?: ").strip()
+
+    if opcion == "1":
+        export_results_to_excel(resultados)
+    elif opcion == "2":
+        export_results_to_csv(resultados)
     else:
-        display_results(resultados, as_dataframe=False)
-
-    # Preguntar si se desea exportar
-    export_choice = input("¿Quieres exportar los resultados a CSV? (S/N): ").strip().lower()
-    if export_choice == "s":
-        filename = input("Ingresa el nombre del archivo (ejemplo: salida.csv): ").strip()
-        if filename == "":
-            filename = "resultados.csv"
-        export_results_to_csv(resultados, filename)
+        print("⚠️ Opción inválida. No se exportaron los resultados.")
