@@ -262,7 +262,7 @@ def export_results_to_excel(results):
     """
     Exporta los resultados a un archivo Excel (.xlsx).
     Pide al usuario el nombre del archivo y el número máximo de filas.
-    No crea archivo si results está vacío.
+    No crea archivo si results está vacío o si el usuario pone 0 filas.
     """
     if not results:
         print("⚠️ No hay resultados para exportar. El archivo Excel no fue creado.")
@@ -274,9 +274,10 @@ def export_results_to_excel(results):
         filename += ".xlsx"
 
     try:
-        max_rows = int(input("🔢 Ingresa el número máximo de filas a exportar (0 para todas): ").strip())
-        if max_rows <= 0:
-            max_rows = None
+        max_rows = int(input("🔢 Ingresa el número máximo de filas a exportar (0 para cancelar): ").strip())
+        if max_rows == 0:
+            print("⚠️ Exportación cancelada. El archivo Excel no fue creado.")
+            return
     except ValueError:
         print("⚠️ Valor inválido. Se exportarán todas las filas.")
         max_rows = None
@@ -285,7 +286,7 @@ def export_results_to_excel(results):
     df = pd.DataFrame(results)
 
     # Limitar filas
-    if max_rows:
+    if max_rows and max_rows > 0:
         df = df.head(max_rows)
 
     # Crear carpeta si no existe
@@ -300,7 +301,7 @@ def export_results_to_csv(results):
     """
     Exporta los resultados a un archivo CSV.
     Pide al usuario el nombre del archivo y el número máximo de filas.
-    No crea archivo si results está vacío.
+    No crea archivo si results está vacío o si el usuario pone 0 filas.
     """
     if not results:
         print("⚠️ No hay resultados para exportar. El archivo CSV no fue creado.")
@@ -312,9 +313,10 @@ def export_results_to_csv(results):
         filename += ".csv"
 
     try:
-        max_rows = int(input("🔢 Ingresa el número máximo de filas a exportar (0 para todas): ").strip())
-        if max_rows <= 0:
-            max_rows = None
+        max_rows = int(input("🔢 Ingresa el número máximo de filas a exportar (0 para cancelar): ").strip())
+        if max_rows == 0:
+            print("⚠️ Exportación cancelada. El archivo CSV no fue creado.")
+            return
     except ValueError:
         print("⚠️ Valor inválido. Se exportarán todas las filas.")
         max_rows = None
@@ -323,13 +325,105 @@ def export_results_to_csv(results):
     df = pd.DataFrame(results)
 
     # Limitar filas
-    if max_rows:
+    if max_rows and max_rows > 0:
         df = df.head(max_rows)
 
     # Crear carpeta si no existe
     ensure_folder_exists(filename)
 
     # Exportar
-    df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False, encoding="utf-8")
     print(f"✅ Resultados exportados correctamente a {filename}")
 
+
+# entregable 10
+def mostrar_columnas_disponibles(resultados):
+    """
+    Muestra los nombres de las columnas disponibles en los resultados.
+    """
+    if resultados:
+        columnas = list(resultados[0].keys())
+        print("\nColumnas disponibles para mostrar/exportar:")
+        print(", ".join(columnas))
+        return columnas
+    else:
+        print("No hay resultados para mostrar columnas.")
+        return []
+
+def filtrar_columnas(resultados, columnas_seleccionadas):
+    """
+    Filtra los resultados para mostrar solo las columnas seleccionadas.
+    Siempre incluye la columna 'score' si existe.
+    """
+    if not resultados:
+        return resultados
+
+    # Asegura que 'score' esté en la lista de columnas
+    columnas = set(columnas_seleccionadas)
+    if 'score' in resultados[0]:
+        columnas.add('score')
+
+    filtrados = []
+    for fila in resultados:
+        filtrados.append({col: fila.get(col, "") for col in columnas})
+    return filtrados
+
+def renombrar_columnas(resultados, columnas_seleccionadas, nuevos_nombres):
+    """
+    Renombra las columnas seleccionadas según el diccionario nuevos_nombres.
+    Siempre incluye la columna 'score' si existe.
+    """
+    if not resultados:
+        return resultados
+
+    columnas = set(columnas_seleccionadas)
+    if 'score' in resultados[0]:
+        columnas.add('score')
+
+    filtrados = []
+    for fila in resultados:
+        nuevo_fila = {}
+        for col in columnas:
+            nuevo_nombre = nuevos_nombres.get(col, col)
+            nuevo_fila[nuevo_nombre] = fila.get(col, "")
+        filtrados.append(nuevo_fila)
+    return filtrados
+
+def preparar_resultados(resultados, columnas_seleccionadas, nuevos_nombres):
+    """
+    Prepara los resultados:
+    - Convierte score a porcentaje.
+    - Une nombre y apellido en 'full_name'.
+    - Renombra columnas según nuevos_nombres.
+    """
+    if not resultados:
+        return resultados
+
+    columnas = set(columnas_seleccionadas)
+    if 'score' in resultados[0]:
+        columnas.add('score')
+    # Siempre incluir full_name
+    columnas.add('full_name')
+
+    filtrados = []
+    for fila in resultados:
+        nuevo_fila = {}
+        # Construir full_name
+        nombre = fila.get('first_name') or fila.get('nombre') or ""
+        apellido = fila.get('last_name') or fila.get('apellido') or ""
+        full_name = f"{nombre} {apellido}".strip()
+        # Score como porcentaje
+        score = fila.get('score')
+        score_pct = f"{round(score, 2)}%" if score is not None else ""
+        for col in columnas:
+            if col == 'score':
+                nuevo_nombre = nuevos_nombres.get(col, col)
+                nuevo_fila[nuevo_nombre] = score_pct
+            elif col == 'full_name':
+                nuevo_nombre = nuevos_nombres.get(col, col)
+                nuevo_fila[nuevo_nombre] = full_name
+            else:
+                nuevo_nombre = nuevos_nombres.get(col, col)
+                nuevo_fila[nuevo_nombre] = fila.get(col, "")
+        filtrados.append(nuevo_fila)
+    return filtrados
