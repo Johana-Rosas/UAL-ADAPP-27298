@@ -152,101 +152,25 @@ def display_results(results, as_dataframe=True):
 
 
 def export_results_to_csv(results, filename="resultados.csv"):
-    
-    if not results:
-        print("No hay resultados para exportar.")
-        return
-    
-    df = pd.DataFrame(results)
-    df.to_csv(filename, index=False, encoding="utf-8")
-    print(f"✅ Resultados exportados correctamente a {filename}")
-
-## Exportar resultados a Excel
-
-def export_results_to_excel(results, filename="resultados.xlsx"):
-    """
-    Exporta los resultados a un archivo Excel.
-    :param results: lista de diccionarios con los resultados
-    :param filename: nombre del archivo Excel (default: resultados.xlsx)
-    """
-    if not results:
-        print("No hay resultados para exportar.")
-        return
-
-    df = pd.DataFrame(results)
-    df.to_excel(filename, index=False, engine="openpyxl")
-    print(f"✅ Resultados exportados correctamente a {filename}")
-
-def export_results_to_csv(results, filename="resultados.csv"):
     """
     Exporta los resultados a un archivo CSV.
-    :param results: lista de diccionarios con los resultados
-    :param filename: nombre del archivo CSV (default: resultados.csv)
     """
     if not results:
-        print("No hay resultados para exportar.")
+        print(" No hay resultados para exportar. El archivo CSV no fue creado.")
         return
-    
+
+    ensure_folder_exists(filename)
+
+    import pandas as pd
     df = pd.DataFrame(results)
     df.to_csv(filename, index=False, encoding="utf-8")
     print(f" Resultados exportados correctamente a {filename}")
 
-
-def export_results_to_excel(results, filename="resultados.xlsx"):
-    """
-    Exporta los resultados a un archivo Excel (.xlsx).
-    :param results: lista de diccionarios con los resultados
-    :param filename: nombre del archivo Excel (default: resultados.xlsx)
-    """
-    if not results:
-        print("No hay resultados para exportar.")
-        return
-    
-    df = pd.DataFrame(results)
-    df.to_excel(filename, index=False, engine="openpyxl")
-    print(f" Resultados exportados correctamente a {filename}")
-
-
+## Exportar resultados a Excel
 
 
 #entregable 9 punto 2
 
-
-
-
-def export_results_to_excel(results):
-    """
-    Exporta los resultados a un archivo Excel (.xlsx).
-    Pide al usuario el nombre del archivo y el número máximo de filas.
-    """
-    if not results:
-        print("⚠️ No hay resultados para exportar. El archivo no fue creado.")
-        return
-
-    # Pedir datos al usuario
-    filename = input("📂 Ingresa el nombre del archivo de salida (.xlsx): ").strip()
-    if not filename.endswith(".xlsx"):
-        filename += ".xlsx"
-
-    try:
-        max_rows = int(input("🔢 Ingresa el número máximo de filas a exportar (0 para todas): ").strip())
-        if max_rows <= 0:
-            max_rows = None
-    except ValueError:
-        print("⚠️ Valor inválido. Se exportarán todas las filas.")
-        max_rows = None
-
-    # Convertir resultados a DataFrame
-    df = pd.DataFrame(results)
-
-    # Limitar filas
-    if max_rows:
-        df = df.head(max_rows)
-
-   
-    # Exportar
-    df.to_excel(filename, index=False, engine="openpyxl")
-    print(f"✅ Resultados exportados correctamente a {filename}")
 
 
 
@@ -258,82 +182,8 @@ def ensure_folder_exists(filepath):
         os.makedirs(folder, exist_ok=True)
 
 
-def export_results_to_excel(results):
-    """
-    Exporta los resultados a un archivo Excel (.xlsx).
-    Pide al usuario el nombre del archivo y el número máximo de filas.
-    No crea archivo si results está vacío o si el usuario pone 0 filas.
-    """
-    if not results:
-        print("⚠️ No hay resultados para exportar. El archivo Excel no fue creado.")
-        return
-
-    # Pedir datos al usuario
-    filename = input("📂 Ingresa el nombre del archivo de salida (.xlsx): ").strip()
-    if not filename.endswith(".xlsx"):
-        filename += ".xlsx"
-
-    try:
-        max_rows = int(input("🔢 Ingresa el número máximo de filas a exportar (0 para cancelar): ").strip())
-        if max_rows == 0:
-            print("⚠️ Exportación cancelada. El archivo Excel no fue creado.")
-            return
-    except ValueError:
-        print("⚠️ Valor inválido. Se exportarán todas las filas.")
-        max_rows = None
-
-    # Convertir resultados a DataFrame
-    df = pd.DataFrame(results)
-
-    # Limitar filas
-    if max_rows and max_rows > 0:
-        df = df.head(max_rows)
-
-    # Crear carpeta si no existe
-    ensure_folder_exists(filename)
-
-    # Exportar
-    df.to_excel(filename, index=False, engine="openpyxl")
-    print(f"✅ Resultados exportados correctamente a {filename}")
 
 
-def export_results_to_csv(results):
-    """
-    Exporta los resultados a un archivo CSV.
-    Pide al usuario el nombre del archivo y el número máximo de filas.
-    No crea archivo si results está vacío o si el usuario pone 0 filas.
-    """
-    if not results:
-        print("⚠️ No hay resultados para exportar. El archivo CSV no fue creado.")
-        return
-
-    # Pedir datos al usuario
-    filename = input("📂 Ingresa el nombre del archivo de salida (.csv): ").strip()
-    if not filename.endswith(".csv"):
-        filename += ".csv"
-
-    try:
-        max_rows = int(input("🔢 Ingresa el número máximo de filas a exportar (0 para cancelar): ").strip())
-        if max_rows == 0:
-            print("⚠️ Exportación cancelada. El archivo CSV no fue creado.")
-            return
-    except ValueError:
-        print("⚠️ Valor inválido. Se exportarán todas las filas.")
-        max_rows = None
-
-    # Convertir resultados a DataFrame
-    df = pd.DataFrame(results)
-
-    # Limitar filas
-    if max_rows and max_rows > 0:
-        df = df.head(max_rows)
-
-    # Crear carpeta si no existe
-    ensure_folder_exists(filename)
-
-    # Exportar
-    df.to_csv(filename, index=False, encoding="utf-8")
-    print(f"✅ Resultados exportados correctamente a {filename}")
 
 
 # entregable 10
@@ -427,3 +277,103 @@ def preparar_resultados(resultados, columnas_seleccionadas, nuevos_nombres):
                 nuevo_fila[nuevo_nombre] = fila.get(col, "")
         filtrados.append(nuevo_fila)
     return filtrados
+
+def export_results_to_excel(results, filename="resultados.xlsx"):
+    """
+    Exporta los resultados a un archivo Excel (.xlsx).
+    """
+    if not results:
+        print(" No hay resultados para exportar. El archivo Excel no fue creado.")
+        return
+
+    # Crear carpeta si no existe
+    ensure_folder_exists(filename)
+
+    # Convertir resultados a DataFrame
+    df = pd.DataFrame(results)
+
+    # Exportar
+    df.to_excel(filename, index=False, engine="openpyxl")
+    print(f" Resultados exportados correctamente a {filename}")
+
+
+    #entregable 11
+
+def separar_matched_unmatched(resultados, score_col="score", threshold=97):
+    """
+    Separa los registros en matched y unmatched según el score.
+    Un registro es matched si el score 
+    """
+    matched = []
+    unmatched = []
+    for fila in resultados:
+        # El score puede venir como '97.0%' o como número
+        score_val = fila.get(score_col, "")
+        if isinstance(score_val, str) and score_val.endswith("%"):
+            try:
+                score_num = float(score_val.replace("%", ""))
+            except ValueError:
+                score_num = 0
+        else:
+            try:
+                score_num = float(score_val)
+            except (ValueError, TypeError):
+                score_num = 0
+
+        if score_num >= threshold:
+            matched.append(fila)
+        else:
+            unmatched.append(fila)
+    return matched, unmatched
+
+import pandas as pd
+
+def importar_archivo(filepath):
+    """
+    Importa un archivo CSV o Excel y devuelve una lista de diccionarios.
+    """
+    if filepath.endswith(".csv"):
+        df = pd.read_csv(filepath)
+    elif filepath.endswith(".xlsx"):
+        df = pd.read_excel(filepath)
+    else:
+        raise ValueError("Solo se permiten archivos .csv o .xlsx")
+    return df.to_dict(orient="records")
+
+def insertar_en_tabla_mysql(host, username, password, port, database, table_name, data):
+    """
+    Inserta una lista de diccionarios en una tabla nueva de MySQL.
+    Crea la tabla automáticamente según las columnas del primer registro.
+    """
+    import mysql.connector
+
+    if not data:
+        print("No hay datos para insertar.")
+        return
+
+    conn = mysql.connector.connect(
+        host=host,
+        user=username,
+        password=password,
+        port=port,
+        database=database
+    )
+    cursor = conn.cursor()
+
+    # Crear tabla si no existe
+    columnas = data[0].keys()
+    columnas_sql = ", ".join([f"`{col}` TEXT" for col in columnas])
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS `{table_name}` ({columnas_sql})")
+
+    # Insertar datos
+    placeholders = ", ".join(["%s"] * len(columnas))
+    insert_sql = f"INSERT INTO `{table_name}` ({', '.join([f'`{col}`' for col in columnas])}) VALUES ({placeholders})"
+    for row in data:
+        cursor.execute(insert_sql, [str(row.get(col, "")) for col in columnas])
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print(f"✅ Datos insertados en la tabla '{table_name}' de la base '{database}'.")
+
+
