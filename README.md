@@ -52,3 +52,21 @@ Esto previene que múltiples matches sobrescriban datos del mismo registro.
 Ajuste de parámetros de ejemplo:
 El score_cutoff predeterminado se cambió de 80 a 70.
 
+
+
+ENTREGABLE SEMANAL #2
+La funcion  importar_archivo_y_insertar_tabla hace:
+Importa un archivo CSV o Excel y lo inserta en la tabla 'matched_record'
+ usando el stored procedure sp_insert_file_matched_record_27298.
+Sobrescribe la tabla si ya existe.
+
+ Convención de nombres
+El stored procedure se llama:
+sp_insert_file_matched_record_27298
+cumpliendo la convención:
+sp_[process]_[source]_[target]_[27298]
+donde:
+process: insert_file
+source: (el archivo)
+target: matched_record
+27298: tu identificador

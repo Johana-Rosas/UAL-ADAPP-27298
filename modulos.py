@@ -328,7 +328,8 @@ def separar_matched_unmatched(resultados, score_col="score", threshold=97):
 
 def importar_archivo_y_insertar_tabla(filepath, db_params):
     """
-    Importa un archivo CSV o Excel y lo inserta en la tabla 'matched_record'.
+    Importa un archivo CSV o Excel y lo inserta en la tabla 'matched_record'
+    usando el stored procedure sp_insert_file_matched_record_27298.
     Sobrescribe la tabla si ya existe.
     """
     # Leer archivo
@@ -355,15 +356,16 @@ def importar_archivo_y_insertar_tabla(filepath, db_params):
     cursor.execute("DROP TABLE IF EXISTS matched_record")
     cursor.execute(f"CREATE TABLE matched_record ({cols})")
 
-    # Insertar datos
+    # Insertar datos usando el stored procedure
+    col_names = ", ".join([f"`{col}`" for col in df.columns])
     for _, row in df.iterrows():
-        placeholders = ", ".join(["%s"] * len(df.columns))
-        sql = f"INSERT INTO matched_record VALUES ({placeholders})"
-        cursor.execute(sql, tuple(row))
+        # Prepara los valores como string SQL seguro
+        values = ", ".join([f"'{str(val).replace('\'', '\\\'')}'" if pd.notnull(val) else "NULL" for val in row])
+        cursor.callproc('sp_insert_file_matched_record_27298', (col_names, values))
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ Datos importados e insertados en la tabla 'matched_record'.")
+    print("✅ Datos importados e insertados en la tabla 'matched_record' usando stored procedure.")
 
 
 
