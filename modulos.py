@@ -326,54 +326,44 @@ def separar_matched_unmatched(resultados, score_col="score", threshold=97):
             unmatched.append(fila)
     return matched, unmatched
 
-import pandas as pd
-
-def importar_archivo(filepath):
+def importar_archivo_y_insertar_tabla(filepath, db_params):
     """
-    Importa un archivo CSV o Excel y devuelve una lista de diccionarios.
+    Importa un archivo CSV o Excel y lo inserta en la tabla 'matched_record'.
+    Sobrescribe la tabla si ya existe.
     """
-    if filepath.endswith(".csv"):
+    # Leer archivo
+    if filepath.endswith('.csv'):
         df = pd.read_csv(filepath)
-    elif filepath.endswith(".xlsx"):
+    elif filepath.endswith('.xlsx'):
         df = pd.read_excel(filepath)
     else:
-        raise ValueError("Solo se permiten archivos .csv o .xlsx")
-    return df.to_dict(orient="records")
-
-def insertar_en_tabla_mysql(host, username, password, port, database, table_name, data):
-    """
-    Inserta una lista de diccionarios en una tabla nueva de MySQL.
-    Crea la tabla automáticamente según las columnas del primer registro.
-    """
-    import mysql.connector
-
-    if not data:
-        print("No hay datos para insertar.")
+        print("⚠️ Formato de archivo no soportado.")
         return
 
+    # Conectar a la base de datos
     conn = mysql.connector.connect(
-        host=host,
-        user=username,
-        password=password,
-        port=port,
-        database=database
+        host=db_params.get("host", "localhost"),
+        user=db_params.get("username", "root"),
+        password=db_params.get("password", ""),
+        port=db_params.get("port", 3306),
+        database=db_params.get("database", "crm")
     )
     cursor = conn.cursor()
 
-    # Crear tabla si no existe
-    columnas = data[0].keys()
-    columnas_sql = ", ".join([f"`{col}` TEXT" for col in columnas])
-    cursor.execute(f"CREATE TABLE IF NOT EXISTS `{table_name}` ({columnas_sql})")
+    # Crear tabla (sobrescribe si existe)
+    cols = ", ".join([f"`{col}` TEXT" for col in df.columns])
+    cursor.execute("DROP TABLE IF EXISTS matched_record")
+    cursor.execute(f"CREATE TABLE matched_record ({cols})")
 
     # Insertar datos
-    placeholders = ", ".join(["%s"] * len(columnas))
-    insert_sql = f"INSERT INTO `{table_name}` ({', '.join([f'`{col}`' for col in columnas])}) VALUES ({placeholders})"
-    for row in data:
-        cursor.execute(insert_sql, [str(row.get(col, "")) for col in columnas])
-
+    for _, row in df.iterrows():
+        placeholders = ", ".join(["%s"] * len(df.columns))
+        sql = f"INSERT INTO matched_record VALUES ({placeholders})"
+        cursor.execute(sql, tuple(row))
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"✅ Datos insertados en la tabla '{table_name}' de la base '{database}'.")
+    print("✅ Datos importados e insertados en la tabla 'matched_record'.")
+
 
 
