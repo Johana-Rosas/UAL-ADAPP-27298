@@ -18,7 +18,7 @@ def connect_to_mysql(host, username, password, port=3306, database=None):
 def ensure_databases_exist(conn, databases):
     cursor = conn.cursor()
     for db in databases:
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db}")
+        cursor.callproc('sp_create_database_if_not_exists_27298', (db,))
     conn.commit()
     cursor.close()
 
@@ -69,17 +69,28 @@ def fuzzy_match(queryRecord, choices, score_cutoff=0):
 
 
 def execute_dynamic_matching(params_dict, score_cutoff=0):
-    conn = connect_to_mysql(
+    # Conexión a base de datos de origen
+    conn_src = connect_to_mysql(
         host=params_dict.get("host", "localhost"),
         username=params_dict.get("username", "root"),
         password=params_dict.get("password", ""),
         port=params_dict.get("port", 3306),
-        database=None
+        database="dbo"
+    )
+    # Conexión a base de datos de destino
+    conn_dest = connect_to_mysql(
+        host=params_dict.get("host", "localhost"),
+        username=params_dict.get("username", "root"),
+        password=params_dict.get("password", ""),
+        port=params_dict.get("port", 3306),
+        database="crm"
     )
 
-    ensure_databases_exist(conn, ["dbo", "crm"])
+    ensure_databases_exist(conn_src, ["dbo"])
+    ensure_databases_exist(conn_dest, ["crm"])
 
-    cursor = conn.cursor()
+    cursor_src = conn_src.cursor()
+    cursor_dest = conn_dest.cursor()
 
     if 'src_dest_mappings' not in params_dict or not params_dict['src_dest_mappings']:
         raise ValueError("Debe proporcionar src_dest_mappings con columnas origen y destino")
@@ -90,17 +101,18 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
     sql_source = f"SELECT {src_cols} FROM {params_dict['sourceTable']}"
     sql_dest   = f"SELECT {dest_cols} FROM {params_dict['destTable']}"
 
-    cursor.execute(sql_source)
-    src_rows = cursor.fetchall()
-    src_columns = [desc[0] for desc in cursor.description]
+    cursor_src.execute(sql_source)
+    src_rows = cursor_src.fetchall()
+    src_columns = [desc[0] for desc in cursor_src.description]
     source_data = [dict(zip(src_columns, row)) for row in src_rows]
 
-    cursor.execute(sql_dest)
-    dest_rows = cursor.fetchall()
-    dest_columns = [desc[0] for desc in cursor.description]
+    cursor_dest.execute(sql_dest)
+    dest_rows = cursor_dest.fetchall()
+    dest_columns = [desc[0] for desc in cursor_dest.description]
     dest_data = [dict(zip(dest_columns, row)) for row in dest_rows]
 
-    conn.close()
+    conn_src.close()
+    conn_dest.close()
 
     matching_records = []
 
@@ -329,8 +341,7 @@ def separar_matched_unmatched(resultados, score_col="score", threshold=97):
 def importar_archivo_y_insertar_tabla(filepath, db_params):
     """
     Importa un archivo CSV o Excel y lo inserta en la tabla 'matched_record'
-    usando el stored procedure sp_insert_file_matched_record_27298.
-    Sobrescribe la tabla si ya existe.
+    usando solo stored procedures, agregando control_number e inserted_at.
     """
     # Leer archivo
     if filepath.endswith('.csv'):
@@ -340,6 +351,12 @@ def importar_archivo_y_insertar_tabla(filepath, db_params):
     else:
         print("⚠️ Formato de archivo no soportado.")
         return
+
+    # Agregar columnas de control si no existen
+    if 'control_number' not in df.columns:
+        df.insert(0, 'control_number', '')
+    if 'inserted_at' not in df.columns:
+        df['inserted_at'] = ''
 
     # Conectar a la base de datos
     conn = mysql.connector.connect(
@@ -351,21 +368,56 @@ def importar_archivo_y_insertar_tabla(filepath, db_params):
     )
     cursor = conn.cursor()
 
-    # Crear tabla (sobrescribe si existe)
-    cols = ", ".join([f"`{col}` TEXT" for col in df.columns])
-    cursor.execute("DROP TABLE IF EXISTS matched_record")
-    cursor.execute(f"CREATE TABLE matched_record ({cols})")
+    # Borrar tabla usando stored procedure
+    cursor.callproc('sp_drop_table_matched_record_27298')
 
-    # Insertar datos usando el stored procedure
+    # Crear tabla usando stored procedure (agrega los campos extra)
+    cols = ", ".join([f"`{col}` TEXT" for col in df.columns if col not in ['inserted_at']])
+    cols += ", `inserted_at` DATETIME"
+    cursor.callproc('sp_create_table_matched_record_27298', (cols,))
+
+    # Obtener el último control_number
+    cursor.execute("SELECT control_number FROM matched_record ORDER BY control_number DESC LIMIT 1")
+    last_cn = cursor.fetchone()
+    if last_cn and last_cn[0] and last_cn[0].startswith("DR"):
+        last_seq = int(last_cn[0][2:])
+    else:
+        last_seq = 0
+
+    # Insertar datos usando stored procedure
     col_names = ", ".join([f"`{col}`" for col in df.columns])
-    for _, row in df.iterrows():
-        # Prepara los valores como string SQL seguro
-        values = ", ".join([f"'{str(val).replace('\'', '\\\'')}'" if pd.notnull(val) else "NULL" for val in row])
-        cursor.callproc('sp_insert_file_matched_record_27298', (col_names, values))
+    now = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+    for idx, row in df.iterrows():
+        seq = last_seq + idx + 1
+        control_number = f"DR{seq:04d}"
+        values = [control_number] + [str(row[col]) if pd.notnull(row[col]) else "" for col in df.columns if col not in ['control_number', 'inserted_at']]
+        values.append(now)
+        values_sql = ", ".join([f"'{str(val).replace('\'', '\\\'')}'" if val != "" else "NULL" for val in values])
+        cursor.callproc('sp_insert_file_matched_record_27298', (col_names, values_sql))
+        print(f"Registro insertado: control_number={control_number}, inserted_at={now}")
+
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ Datos importados e insertados en la tabla 'matched_record' usando stored procedure.")
+    print("✅ Datos importados e insertados en la tabla 'matched_record' usando stored procedures.")
+
+def mostrar_matched_desde_db(db_params):
+    """
+    Lee y muestra los registros matched desde la tabla matched_record.
+    """
+    import mysql.connector
+    import pandas as pd
+
+    conn = mysql.connector.connect(
+        host=db_params.get("host", "localhost"),
+        user=db_params.get("username", "root"),
+        password=db_params.get("password", ""),
+        port=db_params.get("port", 3306),
+        database=db_params.get("database", "crm")
+    )
+    df = pd.read_sql("SELECT * FROM matched_record", conn)
+    conn.close()
+    display_results(df.to_dict(orient="records"), as_dataframe=True)
 
 
 

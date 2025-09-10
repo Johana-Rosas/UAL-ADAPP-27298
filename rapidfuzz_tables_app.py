@@ -6,7 +6,8 @@ from modulos import (
     mostrar_columnas_disponibles,
     preparar_resultados,
     separar_matched_unmatched,
-    importar_archivo_y_insertar_tabla
+    importar_archivo_y_insertar_tabla,
+    mostrar_matched_desde_db
 )
 
 params_dict = {
@@ -122,6 +123,10 @@ if __name__ == "__main__":
             export_results_to_excel(export_data, filename)
         elif opcion == "2":
             export_results_to_csv(export_data, filename)
+        # Insertar matched en la base de datos
+        importar_archivo_y_insertar_tabla(filename, params_dict)
+        # Mostrar matched desde la base de datos
+        mostrar_matched_desde_db(params_dict)
     elif grupo == "2":
         export_data = unmatched
         export_label = "unmatched"
