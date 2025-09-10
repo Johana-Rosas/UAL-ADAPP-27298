@@ -342,6 +342,7 @@ def importar_archivo_y_insertar_tabla(filepath, db_params):
     """
     Importa un archivo CSV o Excel y lo inserta en la tabla 'matched_record'
     usando solo stored procedures, agregando control_number e inserted_at.
+    NO borra la tabla matched_record, solo agrega registros.
     """
     # Leer archivo
     if filepath.endswith('.csv'):
@@ -368,10 +369,7 @@ def importar_archivo_y_insertar_tabla(filepath, db_params):
     )
     cursor = conn.cursor()
 
-    # Borrar tabla usando stored procedure
-    cursor.callproc('sp_drop_table_matched_record_27298')
-
-    # Crear tabla usando stored procedure (agrega los campos extra)
+    # Crear tabla usando stored procedure (solo si no existe)
     cols = ", ".join([f"`{col}` TEXT" for col in df.columns if col not in ['inserted_at']])
     cols += ", `inserted_at` DATETIME"
     cursor.callproc('sp_create_table_matched_record_27298', (cols,))
