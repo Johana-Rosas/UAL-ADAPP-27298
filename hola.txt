@@ -10,7 +10,7 @@ observe how the algorithm finds matches based on text similarity. create or
 2.what if accents or special characters are missing (e.g. "Pérez" vs "Perez")?
     Cuando faltan acentos o caracteres especiales, el algoritmo de RapidFuzz normalmente considera que "Pérez" y "Perez" son muy similares, pero no idénticos.
     El score de similitud será alto (por ejemplo, 95-98%), pero no perfecto, ya que internamente compara los caracteres exactos.
-
+   
 3.if two records get a very similar score, how should the algorithm decide wich one is the best match?
     Esto significa que puedes tener múltiples candidatos con scores cercanos (ejemplo: "Perez" 96%, "Peres" 95%).
     Para resolverlo, normalmente se:
