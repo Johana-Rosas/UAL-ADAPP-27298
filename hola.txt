@@ -1,0 +1,35 @@
+Entregable #14
+
+observe how the algorithm finds matches based on text similarity. create or
+ find data scenarios to answer the following questions
+
+1.how does the algorithm behave if there are typos in the lastname?(e.g. "perezz" vs "perez")
+    el algoritmo usa rapidfuzz con varios scorers, si hay un error pequeño como una letra
+    la similitud seuiria siendo alta solo que ya no completamente exactas.
+
+2.what if accents or special characters are missing (e.g. "Pérez" vs "Perez")?
+    Cuando faltan acentos o caracteres especiales, el algoritmo de RapidFuzz normalmente considera que "Pérez" y "Perez" son muy similares, pero no idénticos.
+    El score de similitud será alto (por ejemplo, 95-98%), pero no perfecto, ya que internamente compara los caracteres exactos.
+
+3.if two records get a very similar score, how should the algorithm decide wich one is the best match?
+    Esto significa que puedes tener múltiples candidatos con scores cercanos (ejemplo: "Perez" 96%, "Peres" 95%).
+    Para resolverlo, normalmente se:
+    Toma el score más alto.
+    O se introducen reglas adicionales
+
+4.what happens if the name matches but the email is very different?
+    El algoritmo concatena todas las columnas (queryMatch += val en fuzzy_match).
+    Por tanto, el correo muy distinto reducirá el score global, aunque el nombre sea idéntico.
+    Resultado: podría clasificarse como unmatched, aunque el nombre sí coincidía.
+
+5.what are the limitations of treating all columns with the same importance?
+    Todas las columnas se concatenan en una sola cadena, así que:
+    Un error en un campo poco relevante (ejemplo: dirección)
+    baja la puntuación total igual que un error en un campo crítico (ejemplo: apellido)
+    No se puede diferenciar entre información clave (ej. nombre, correo) e información secundaria (ej. ciudad).
+
+6.can you think of real situacions (e.g. customer databases, hospital records, e-commerce) where fuzzy mathing
+create problems if all columns are treated equally?
+    Base de datos de clientes: dos personas con el mismo nombre pero distinto correo pueden ser confundidas como la misma.
+    Hospitales: si el nombre coincide pero la fecha de nacimiento está mal, podría unir registros de pacientes distintos.
+    E-commerce: direcciones de envío diferentes pero nombres similares podrían provocar que se mezclen órdenes de clientes.
